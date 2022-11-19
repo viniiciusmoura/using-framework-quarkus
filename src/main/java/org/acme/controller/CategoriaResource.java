@@ -1,8 +1,10 @@
 package org.acme.controller;
 
+import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 import org.acme.model.Categoria;
 
 import javax.persistence.EntityManager;
+import javax.persistence.OptimisticLockException;
 import javax.swing.text.html.parser.Entity;
 import javax.transaction.Transactional;
 import javax.ws.rs.*;
@@ -31,8 +33,23 @@ public class CategoriaResource {
     @Transactional
     @POST
     public void insert(Categoria categoria) {
-        EntityManager em = Categoria.getEntityManager();
-        em.persist(categoria);
+        Categoria.persist(categoria);
+    }
+
+    @Transactional
+    @Path("/{id}")
+    @PUT
+    public void update(@PathParam("id") long id, Categoria categoria) {
+//        var categoriaLocalizada =(Categoria) Categoria.findById(id);
+//        categoriaLocalizada.descricao = categoria.descricao;
+//        categoriaLocalizada.sigla = categoria.sigla;
+//        categoriaLocalizada.persist();
+        try {
+            var em = JpaOperations.INSTANCE.getEntityManager();
+            em.merge(categoria);
+        }catch (OptimisticLockException e){
+            throw  new WebApplicationException("registro alterado po outro usuário",e);
+        }
     }
 
     @GET
